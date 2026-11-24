@@ -2,7 +2,7 @@
   "pluginAlias": "TuyaIRHub",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Tuya Wi-Fi IR hubs with temperature/humidity sensor (S09, category wnykq) controlled over the local network (Tuya protocol 3.3, TCP 6668), no cloud.\n\n1. Give each hub a DHCP reservation in your router so its IP never changes.\n2. Get the device id and the 16-character local key: create a cloud project at iot.tuya.com, link your Tuya Smart / Smart Life app account to it (Devices → Link App Account), then read the key with `tinytuya wizard` or the API Explorer (Device Management → Query Device Details). The key changes if you re-pair the hub in the app.\n3. Learn codes with the bundled CLI (stop Homebridge first, the hub accepts one connection): `TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id>`, press each remote button, and paste the printed base64 codes as buttons below.",
+  "headerDisplay": "Tuya Wi-Fi IR hubs with temperature/humidity sensor (S09, category wnykq) controlled over the local network (Tuya protocol 3.3, TCP 6668), no cloud.\n\n1. Give each hub a DHCP reservation in your router so its IP never changes.\n2. Get the device id and the 16-character local key: create a cloud project at iot.tuya.com, link your Tuya Smart / Smart Life app account to it (Devices → Link App Account), then read the key with `tinytuya wizard` or the API Explorer (Device Management → Query Device Details). The key changes if you re-pair the hub in the app.\n3. Learn codes with the bundled CLI (stop Homebridge first, the hub accepts one connection): `TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id>`, press each remote button, and paste the printed base64 codes as buttons below.\n4. Coolix air conditioners (Midea, Mirage, Electrolux, Comfort Star...) need no learning: add an AC block to the hub. Test with `tuya-ir-learn ... --ac cool 24 auto` and `--ac off`.",
   "schema": {
     "type": "object",
     "required": ["name"],
@@ -62,6 +62,37 @@
                     "type": "string",
                     "description": "As printed by tuya-ir-learn."
                   }
+                }
+              }
+            },
+            "ac": {
+              "title": "Air conditioner (Coolix)",
+              "type": "object",
+              "description": "Adds a separate HeaterCooler accessory whose IR codes are generated locally, no learning. The AC is only created when it has a name.",
+              "properties": {
+                "name": {"title": "Name", "type": "string", "placeholder": "Aire Sala"},
+                "protocol": {
+                  "title": "IR protocol",
+                  "type": "string",
+                  "default": "coolix",
+                  "enum": ["coolix"],
+                  "description": "Coolix: Midea, Mirage, Electrolux, Comfort Star and other Midea-made units."
+                },
+                "heat": {"title": "Has heat mode", "type": "boolean", "default": false},
+                "minTemp": {"title": "Minimum temperature (°C)", "type": "integer", "default": 17, "minimum": 17, "maximum": 30},
+                "maxTemp": {"title": "Maximum temperature (°C)", "type": "integer", "default": 30, "minimum": 17, "maximum": 30},
+                "toggles": {
+                  "title": "Extra remote buttons",
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {"type": "string", "enum": ["swing", "display", "sleep", "turbo"]},
+                  "description": "Each one is a momentary switch: swing (Oscilar), display (Pantalla), sleep (Modo noche), turbo (Turbo)."
+                },
+                "extraModes": {
+                  "title": "Fan-only and dry switches",
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Adds the momentary switches Solo ventilador and Deshumidificar."
                 }
               }
             }

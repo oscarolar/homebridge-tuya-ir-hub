@@ -19,7 +19,7 @@ const controls = hub => requestsOf(hub, CMD.CONTROL).map(r => JSON.parse(r.messa
 
 test('arguments: required ip/id, defaults, and the local key never comes from argv', () => {
   assert.deepStrictEqual(parseArgs(['--ip', '10.0.0.2', '--id', ID]),
-    {ip: '10.0.0.2', id: ID, port: 6668, timeout: 30, send: undefined, status: false});
+    {ip: '10.0.0.2', id: ID, port: 6668, timeout: 30, send: undefined, status: false, ac: undefined});
   assert.match(parseArgs(['--ip', '10.0.0.2']), /required/);
   assert.match(parseArgs(['--ip', '10.0.0.2', '--id', ID, '--key', KEY]), /Unknown argument --key/);
   assert.match(parseArgs(['--ip', '10.0.0.2', '--id', ID, '--send', 'no!']), /base64/);
@@ -59,5 +59,30 @@ test('learn mode prints each code reported on DP 202 and exits study mode on tim
   assert.deepStrictEqual(result.stdout.trim().split('\n').map(line => JSON.parse(line)), [{code: CODE}]);
   assert.deepStrictEqual(controls(hub).map(c => c.control), ['study_exit', 'study', 'study_exit']);
   assert.ok(!result.stdout.includes(KEY) && !result.stderr.includes(KEY));
+  hub.close();
+});
+
+test('--ac parses a Coolix state, off and the fixed commands', () => {
+  const base = ['--ip', '1', '--id', ID];
+  assert.deepStrictEqual(parseArgs([...base, '--ac', 'cool', '26', 'auto']).ac, {mode: 'cool', temp: 26, fan: 'auto'});
+  assert.strictEqual(parseArgs([...base, '--ac', 'off']).ac, 'off');
+  assert.strictEqual(parseArgs(['--ac', 'turbo', ...base]).ac, 'turbo');
+  assert.match(parseArgs([...base, '--ac', 'cool', '31', 'auto']), /17 to 30/);
+  assert.match(parseArgs([...base, '--ac', 'cool', '24', 'max']), /fan must be/);
+  assert.match(parseArgs([...base, '--ac', 'warm', '24', 'auto']), /--ac needs/);
+});
+
+test('--ac sends one generated Coolix code', async () => {
+  const hub = await fakeHub();
+  const coolix = require('../dist/coolix');
+  const off = await run(['--ip', '127.0.0.1', '--port', String(hub.port), '--id', ID, '--ac', 'off']);
+  assert.strictEqual(off.code, 0, off.stderr);
+  const on = await run(['--ip', '127.0.0.1', '--port', String(hub.port), '--id', ID, '--ac', 'cool', '26', 'auto']);
+  assert.strictEqual(on.code, 0, on.stderr);
+  assert.deepStrictEqual(JSON.parse(on.stdout), {sent: true, ac: {mode: 'cool', temp: 26, fan: 'auto'}});
+  assert.deepStrictEqual(controls(hub).map(c => c.key1), [
+    '1' + coolix.offCode(),
+    '1' + coolix.stateCode({mode: 'cool', temp: 26, fan: 'auto'}),
+  ]);
   hub.close();
 });

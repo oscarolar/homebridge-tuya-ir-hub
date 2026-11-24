@@ -1,15 +1,22 @@
 #!/usr/bin/env node
 import {DEFAULT_PORT, TuyaClient} from './client';
+import {AC_FANS, AC_MODES, AC_TOGGLES, AcFan, AcMode, AcState, AcToggle, TEMP_MAX, TEMP_MIN, offCode, stateCode, toggleCode} from './coolix';
 import {DP_IR_SEND, DP_IR_STUDY_CODE, isBase64, sendIr, studyExit, studyStart} from './ir';
 
 const USAGE = `Usage: TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id> [--timeout 30]
        TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id> --send <base64 code>
        TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id> --status
+       TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id> --ac <mode> <temp> <fan>
+       TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id> --ac off|swing|display|sleep|turbo
 
 Learn mode prints one JSON line per learned code: {"code":"<base64>"}.
+--ac sends a Coolix air-conditioner code generated locally: mode ${AC_MODES.join('|')},
+temp ${TEMP_MIN}-${TEMP_MAX}, fan ${AC_FANS.join('|')}.
 Stop Homebridge (or this hub's child bridge) first: the hub accepts one connection at a time.`;
 
 const CONNECT_TIMEOUT_MS = 10000;
+
+type AcCommand = AcState | 'off' | AcToggle;
 
 export interface Options {
   ip: string;
@@ -18,10 +25,34 @@ export interface Options {
   timeout: number;
   send?: string;
   status: boolean;
+  ac?: AcCommand;
+}
+
+function isCommand(value: string | undefined): value is 'off' | AcToggle {
+  return value === 'off' || AC_TOGGLES.includes(value as AcToggle);
+}
+
+function parseAc(args: string[]): {ac: AcCommand} | string {
+  const [mode, temp, fan] = args;
+  if (isCommand(mode)) {
+    return {ac: mode};
+  }
+  if (!AC_MODES.includes(mode as AcMode)) {
+    return `--ac needs off, ${AC_TOGGLES.join(', ')} or a mode (${AC_MODES.join(', ')})`;
+  }
+  const degrees = Number(temp);
+  if (!Number.isInteger(degrees) || degrees < TEMP_MIN || degrees > TEMP_MAX) {
+    return `--ac temperature must be an integer from ${TEMP_MIN} to ${TEMP_MAX}`;
+  }
+  if (!AC_FANS.includes(fan as AcFan)) {
+    return `--ac fan must be one of ${AC_FANS.join(', ')}`;
+  }
+  return {ac: {mode: mode as AcMode, temp: degrees, fan: fan as AcFan}};
 }
 
 export function parseArgs(argv: string[]): Options | string {
   const values: Record<string, string | boolean> = {};
+  let acValue: AcCommand | undefined;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--help' || arg === '-h') {
@@ -29,6 +60,16 @@ export function parseArgs(argv: string[]): Options | string {
     }
     if (arg === '--status') {
       values.status = true;
+      continue;
+    }
+    if (arg === '--ac') {
+      const count = isCommand(argv[i + 1]) ? 1 : 3;
+      const parsed = parseAc(argv.slice(i + 1, i + 1 + count));
+      if (typeof parsed === 'string') {
+        return `${parsed}\n\n${USAGE}`;
+      }
+      acValue = parsed.ac;
+      i += count;
       continue;
     }
     if (!['--ip', '--id', '--port', '--timeout', '--send'].includes(arg)) {
@@ -58,6 +99,7 @@ export function parseArgs(argv: string[]): Options | string {
     timeout,
     send: values.send === undefined ? undefined : String(values.send),
     status: values.status === true,
+    ac: acValue,
   };
 }
 
@@ -121,6 +163,11 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<numb
     await connect(client);
     if (options.status) {
       process.stdout.write(JSON.stringify(await client.query()) + '\n');
+    } else if (options.ac) {
+      const {ac} = options;
+      const code = ac === 'off' ? offCode() : typeof ac === 'string' ? toggleCode(ac) : stateCode(ac);
+      await client.set({[DP_IR_SEND]: sendIr(code)});
+      process.stdout.write(JSON.stringify({sent: true, ac}) + '\n');
     } else if (options.send) {
       await client.set({[DP_IR_SEND]: sendIr(options.send)});
       process.stdout.write(JSON.stringify({sent: true}) + '\n');

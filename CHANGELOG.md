@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0
+
+- Coolix air conditioners (Midea, Mirage, Electrolux, Comfort Star...) as a
+  separate HeaterCooler accessory per hub, with IR codes generated locally,
+  no learning: power, Cool/Auto (and Heat with `heat: true`), 17-30 °C and
+  four fan speeds, current temperature from the hub's sensor.
+- Assumed state persisted in the accessory cache; HomeKit writes that arrive
+  together are coalesced into one IR code (400 ms).
+- Optional momentary switches for swing, display, sleep and turbo
+  (`ac.toggles`) and for fan-only and dry modes (`ac.extraModes`).
+- `tuya-ir-learn --ac <mode> <temp> <fan>`, `--ac off` and
+  `--ac swing|display|sleep|turbo` send a generated Coolix code.
+
 ## 0.1.0
 
 - First release: Tuya Wi-Fi IR hubs with temperature/humidity sensor (S09,

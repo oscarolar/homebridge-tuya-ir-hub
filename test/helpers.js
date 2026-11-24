@@ -118,7 +118,7 @@ class FakeAccessory {
 }
 
 function fakeApi() {
-  const calls = {registered: [], unregistered: []};
+  const calls = {registered: [], unregistered: [], updated: []};
   const listeners = {};
   const api = {
     hap,
@@ -133,6 +133,7 @@ function fakeApi() {
     },
     registerPlatformAccessories: (plugin, platform, accessories) => calls.registered.push(...accessories),
     unregisterPlatformAccessories: (plugin, platform, accessories) => calls.unregistered.push(...accessories),
+    updatePlatformAccessories: accessories => calls.updated.push(...accessories),
   };
   return api;
 }

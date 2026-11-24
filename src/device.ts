@@ -13,6 +13,16 @@ export interface ButtonConfig {
   code: string;
 }
 
+export interface AcConfig {
+  name?: string;
+  protocol?: string;
+  heat?: boolean;
+  minTemp?: number;
+  maxTemp?: number;
+  extraModes?: boolean;
+  toggles?: string[];
+}
+
 export interface HubConfig {
   name: string;
   id: string;
@@ -23,6 +33,7 @@ export interface HubConfig {
   pollInterval?: number;
   temperatureOffset?: number;
   buttons?: ButtonConfig[];
+  ac?: AcConfig;
 }
 
 export interface HubOptions {

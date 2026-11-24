@@ -1,8 +1,10 @@
 import type {API, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig} from 'homebridge';
+import {AcOptions, TuyaIRAcAccessory} from './ac';
 import {TuyaIRHubAccessory} from './accessory';
+import {AC_TOGGLES, AcToggle, TEMP_MAX, TEMP_MIN} from './coolix';
 import {ButtonConfig, HubConfig, TuyaHub} from './device';
 import {isBase64} from './ir';
-import {slug} from './mapping';
+import {serviceName, slug} from './mapping';
 import {VERSION} from './protocol';
 
 export const PLUGIN_NAME = 'homebridge-tuya-ir-hub';
@@ -11,7 +13,7 @@ export const PLATFORM_NAME = 'TuyaIRHub';
 export class TuyaIRHubPlatform implements DynamicPlatformPlugin {
   private readonly cached = new Map<string, PlatformAccessory>();
   private readonly hubs: TuyaHub[] = [];
-  private readonly views: TuyaIRHubAccessory[] = [];
+  private readonly views: (TuyaIRHubAccessory | TuyaIRAcAccessory)[] = [];
   private shuttingDown = false;
 
   constructor(
@@ -49,15 +51,17 @@ export class TuyaIRHubPlatform implements DynamicPlatformPlugin {
         continue;
       }
       wanted.add(uuid);
-      let accessory = this.cached.get(uuid);
-      if (!accessory) {
-        accessory = new this.api.platformAccessory(hub.name, uuid);
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        this.log.info(`Added ${hub.name} (${hub.ip})`);
-      }
+      const accessory = this.accessory(uuid, hub.name, `Added ${hub.name} (${hub.ip})`);
       const device = new TuyaHub(hub, this.log);
       this.hubs.push(device);
       this.views.push(new TuyaIRHubAccessory(this.api, accessory, device, this.buttons(hub)));
+      const ac = this.acOptions(hub);
+      if (ac) {
+        const acUuid = this.api.hap.uuid.generate(`tuya-ir-hub:${hub.id}-ac`);
+        wanted.add(acUuid);
+        const acAccessory = this.accessory(acUuid, ac.name, `Added ${ac.name} (Coolix via ${hub.name})`);
+        this.views.push(new TuyaIRAcAccessory(this.api, acAccessory, device, ac));
+      }
       if (!this.shuttingDown) {
         device.start();
       }
@@ -68,6 +72,55 @@ export class TuyaIRHubPlatform implements DynamicPlatformPlugin {
       this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, stale);
       stale.forEach(a => this.log.info(`Removed ${a.displayName}`));
     }
+  }
+
+  private accessory(uuid: string, name: string, message: string): PlatformAccessory {
+    let accessory = this.cached.get(uuid);
+    if (!accessory) {
+      accessory = new this.api.platformAccessory(name, uuid);
+      this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+      this.log.info(message);
+    }
+    return accessory;
+  }
+
+  private acOptions(hub: HubConfig): AcOptions | undefined {
+    const ac = hub.ac;
+    if (!ac || typeof ac !== 'object' || !String(ac.name ?? '').trim()) {
+      return undefined;
+    }
+    const protocol = String(ac.protocol ?? 'coolix');
+    if (protocol !== 'coolix') {
+      this.log.error(`${hub.name}: AC protocol ${protocol} is not supported (only coolix), ignoring the AC`);
+      return undefined;
+    }
+    const limit = (value: unknown, fallback: number) => {
+      const number = Number(value ?? fallback);
+      return Number.isFinite(number) ? Math.min(TEMP_MAX, Math.max(TEMP_MIN, Math.round(number))) : fallback;
+    };
+    let minTemp = limit(ac.minTemp, TEMP_MIN);
+    let maxTemp = limit(ac.maxTemp, TEMP_MAX);
+    if (minTemp > maxTemp) {
+      this.log.warn(`${hub.name}: AC minTemp is above maxTemp, using ${TEMP_MIN}-${TEMP_MAX}`);
+      minTemp = TEMP_MIN;
+      maxTemp = TEMP_MAX;
+    }
+    const toggles: AcToggle[] = [];
+    for (const toggle of Array.isArray(ac.toggles) ? ac.toggles : []) {
+      if (!AC_TOGGLES.includes(toggle as AcToggle)) {
+        this.log.warn(`${hub.name}: unknown AC toggle ${toggle}, ignoring it`);
+      } else if (!toggles.includes(toggle as AcToggle)) {
+        toggles.push(toggle as AcToggle);
+      }
+    }
+    return {
+      name: serviceName(String(ac.name)),
+      heat: ac.heat === true,
+      minTemp,
+      maxTemp,
+      extraModes: ac.extraModes === true,
+      toggles,
+    };
   }
 
   private valid(hub: HubConfig): boolean {
