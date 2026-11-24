@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon.png" width="128" alt="homebridge-tuya-ir-hub icon"></p>
+
 # homebridge-tuya-ir-hub
 
 [![npm](https://img.shields.io/npm/v/homebridge-tuya-ir-hub)](https://www.npmjs.com/package/homebridge-tuya-ir-hub)
