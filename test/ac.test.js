@@ -91,10 +91,12 @@ test('writes in one burst are coalesced into exactly one state frame', async () 
   await sleep(200);
   assert.strictEqual(requestsOf(hub, CMD.CONTROL).length, 0);
   await Promise.all(writes);
+  await waitFor(() => sentBytes(hub).length >= 1);
   assert.deepStrictEqual(sentBytes(hub), [coolix.hex(coolix.encodeState({mode: 'cool', temp: 26, fan: 'high'}))]);
   assert.strictEqual(service.getCharacteristic(Characteristic.CurrentHeaterCoolerState).value,
     Characteristic.CurrentHeaterCoolerState.COOLING);
   await service.getCharacteristic(Characteristic.CoolingThresholdTemperature).handleSetRequest(24);
+  await waitFor(() => sentBytes(hub).length >= 2);
   assert.deepStrictEqual(sentBytes(hub).slice(1), ['B2 4D 3F C0 40 BF']);
   api.emit('shutdown');
   hub.close();
@@ -104,12 +106,14 @@ test('Active=0 sends OFF, and changes while off are kept without sending', async
   const {hub, api} = await started({name: 'Aire'});
   const service = acAccessory(api).getService(Service.HeaterCooler);
   await service.getCharacteristic(Characteristic.Active).handleSetRequest(0);
+  await waitFor(() => sentBytes(hub).length >= 1);
   assert.deepStrictEqual(sentBytes(hub), ['B2 4D 7B 84 E0 1F']);
   await service.getCharacteristic(Characteristic.CoolingThresholdTemperature).handleSetRequest(22);
   await service.getCharacteristic(Characteristic.TargetHeaterCoolerState).handleSetRequest(Characteristic.TargetHeaterCoolerState.AUTO);
   await sleep(450);
   assert.strictEqual(sentBytes(hub).length, 1);
   await service.getCharacteristic(Characteristic.Active).handleSetRequest(1);
+  await waitFor(() => sentBytes(hub).length >= 2);
   assert.deepStrictEqual(sentBytes(hub).slice(1), [coolix.hex(coolix.encodeState({mode: 'auto', temp: 22, fan: 'auto'}))]);
   assert.strictEqual(service.getCharacteristic(Characteristic.CurrentHeaterCoolerState).value,
     Characteristic.CurrentHeaterCoolerState.IDLE);
@@ -180,16 +184,19 @@ test('toggles and extra modes are momentary switches on the AC accessory', async
   for (const toggle of ['swing', 'display', 'sleep', 'turbo']) {
     await accessory.getServiceById(Service.Switch, `toggle-${toggle}`).getCharacteristic(Characteristic.On).handleSetRequest(true);
   }
+  await waitFor(() => sentBytes(hub).length >= 4);
   assert.deepStrictEqual(sentBytes(hub),
     ['B2 4D 6B 94 E0 1F', 'B5 4A F5 0A A5 5A', 'B2 4D E0 1F 03 FC', 'B5 4A F5 0A A2 5D']);
   const fanOnly = accessory.getServiceById(Service.Switch, 'fan-only').getCharacteristic(Characteristic.On);
   await fanOnly.handleSetRequest(true);
   fanOnly.value = true;
+  await waitFor(() => sentBytes(hub).length >= 5);
   assert.deepStrictEqual(sentBytes(hub).slice(4), ['B2 4D BF 40 E4 1B']);
   assert.strictEqual(accessory.context.ac.mode, 'fan');
   assert.strictEqual(accessory.getService(Service.HeaterCooler).getCharacteristic(Characteristic.Active).value, 1);
   await waitFor(() => fanOnly.value === false, 1500);
   await accessory.getServiceById(Service.Switch, 'dry').getCharacteristic(Characteristic.On).handleSetRequest(true);
+  await waitFor(() => sentBytes(hub).length >= 6);
   assert.deepStrictEqual(sentBytes(hub).slice(5), [coolix.hex(coolix.encodeState({mode: 'dry', temp: 24, fan: 'auto'}))]);
   api.emit('shutdown');
   hub.close();
