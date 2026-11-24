@@ -1,0 +1,55 @@
+{
+  "name": "homebridge-tuya-ir-hub",
+  "displayName": "Tuya IR Hub",
+  "version": "0.1.0",
+  "description": "Homebridge plugin for Tuya Wi-Fi IR blasters with temperature/humidity sensor (S09, wnykq) over the local LAN protocol 3.3 (no cloud): sensors in HomeKit plus learned IR codes as buttons.",
+  "license": "MIT",
+  "author": "Oscar Alcalá",
+  "homepage": "https://github.com/oscarolar/homebridge-tuya-ir-hub#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oscarolar/homebridge-tuya-ir-hub.git"
+  },
+  "bugs": {
+    "url": "https://github.com/oscarolar/homebridge-tuya-ir-hub/issues"
+  },
+  "funding": {
+    "type": "paypal",
+    "url": "https://paypal.me/oscarolar"
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "tuya-ir-learn": "dist/learn.js"
+  },
+  "files": [
+    "dist",
+    "config.schema.json"
+  ],
+  "engines": {
+    "node": "^20.18.0 || ^22.10.0 || ^24.0.0 || ^26.0.0",
+    "homebridge": "^1.8.0 || ^2.0.0"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "supports-hap",
+    "tuya",
+    "local",
+    "ir",
+    "infrared",
+    "remote",
+    "temperature",
+    "humidity",
+    "s09"
+  ],
+  "scripts": {
+    "build": "rimraf ./dist && tsc",
+    "test": "npm run build && node --test test/*.test.js",
+    "prepublishOnly": "npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "homebridge": "^2.4.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.3"
+  }
+}

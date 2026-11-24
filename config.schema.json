@@ -1,0 +1,73 @@
+{
+  "pluginAlias": "TuyaIRHub",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Tuya Wi-Fi IR hubs with temperature/humidity sensor (S09, category wnykq) controlled over the local network (Tuya protocol 3.3, TCP 6668), no cloud.\n\n1. Give each hub a DHCP reservation in your router so its IP never changes.\n2. Get the device id and the 16-character local key: create a cloud project at iot.tuya.com, link your Tuya Smart / Smart Life app account to it (Devices → Link App Account), then read the key with `tinytuya wizard` or the API Explorer (Device Management → Query Device Details). The key changes if you re-pair the hub in the app.\n3. Learn codes with the bundled CLI (stop Homebridge first, the hub accepts one connection): `TUYA_LOCAL_KEY=<key> tuya-ir-learn --ip <ip> --id <device id>`, press each remote button, and paste the printed base64 codes as buttons below.",
+  "schema": {
+    "type": "object",
+    "required": ["name"],
+    "properties": {
+      "name": {
+        "title": "Platform name",
+        "type": "string",
+        "default": "Tuya IR Hub"
+      },
+      "hubs": {
+        "title": "IR hubs",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["name", "id", "ip", "localKey"],
+          "properties": {
+            "name": {"title": "Name", "type": "string"},
+            "id": {"title": "Device id", "type": "string"},
+            "ip": {"title": "IP address", "type": "string", "format": "ipv4"},
+            "localKey": {
+              "title": "Local key",
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 16,
+              "x-schema-form": {"type": "password"}
+            },
+            "version": {
+              "title": "Tuya protocol version",
+              "type": "string",
+              "default": "3.3",
+              "enum": ["3.3"],
+              "description": "Only 3.3 is supported."
+            },
+            "pollInterval": {
+              "title": "Status poll interval (seconds)",
+              "type": "integer",
+              "default": 60,
+              "minimum": 15,
+              "description": "The hub also pushes changes on its own; the poll is a fallback."
+            },
+            "temperatureOffset": {
+              "title": "Temperature offset (°C)",
+              "type": "number",
+              "default": 0,
+              "description": "Added to every temperature reading, e.g. -1.5 if the sensor reads high."
+            },
+            "buttons": {
+              "title": "IR buttons",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "code"],
+                "properties": {
+                  "name": {"title": "Name", "type": "string"},
+                  "code": {
+                    "title": "Learned code (base64)",
+                    "type": "string",
+                    "description": "As printed by tuya-ir-learn."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
