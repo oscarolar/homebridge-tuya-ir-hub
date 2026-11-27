@@ -21,6 +21,7 @@ export interface AcConfig {
   maxTemp?: number;
   extraModes?: boolean;
   toggles?: string[];
+  names?: Record<string, unknown>;
 }
 
 export interface HubConfig {

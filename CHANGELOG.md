@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- The AC's extra switches are now named in English by default (Swing,
+  Display, Sleep, Turbo, Fan Only, Dry) and can be renamed in any language
+  with `ac.names`. Existing setups that relied on the old Spanish names should
+  set them in `ac.names`; switches are renamed on the next restart.
+
 ## 0.2.0
 
 - Coolix air conditioners (Midea, Mirage, Electrolux, Comfort Star...) as a

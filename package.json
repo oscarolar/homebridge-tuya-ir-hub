@@ -1,7 +1,7 @@
 {
   "name": "homebridge-tuya-ir-hub",
   "displayName": "Tuya IR Hub",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Homebridge plugin for Tuya Wi-Fi IR blasters with temperature/humidity sensor (S09, wnykq) over the local LAN protocol 3.3 (no cloud): sensors in HomeKit, learned IR codes as buttons and Coolix air conditioners generated locally.",
   "license": "MIT",
   "author": "Oscar Alcalá",

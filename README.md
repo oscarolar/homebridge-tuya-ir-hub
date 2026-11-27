@@ -3,6 +3,8 @@
 # homebridge-tuya-ir-hub
 
 [![npm](https://img.shields.io/npm/v/homebridge-tuya-ir-hub)](https://www.npmjs.com/package/homebridge-tuya-ir-hub)
+[![verified-by-homebridge](https://img.shields.io/badge/homebridge-verified-blueviolet?color=%23491F59&style=flat)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+[![npm downloads](https://img.shields.io/npm/dt/homebridge-tuya-ir-hub)](https://www.npmjs.com/package/homebridge-tuya-ir-hub)
 [![Build and test](https://github.com/oscarolar/homebridge-tuya-ir-hub/actions/workflows/build.yml/badge.svg)](https://github.com/oscarolar/homebridge-tuya-ir-hub/actions/workflows/build.yml)
 
 Homebridge plugin for **Tuya Wi-Fi IR blasters with a temperature/humidity
@@ -107,11 +109,13 @@ cool at 24 °C, it speaks Coolix.
 
 ```json
 "ac": {
-  "name": "Aire Sala",
+  "name": "Living Room AC",
   "heat": false,
   "minTemp": 17,
   "maxTemp": 30,
-  "toggles": ["swing", "display", "sleep", "turbo"]
+  "toggles": ["swing", "display", "sleep", "turbo"],
+  "extraModes": true,
+  "names": {"swing": "Oscilar", "fanOnly": "Solo ventilador"}
 }
 ```
 
@@ -121,8 +125,9 @@ cool at 24 °C, it speaks Coolix.
 | `protocol` | `"coolix"` | the only protocol implemented |
 | `heat` | `false` | adds Heat mode and a heating threshold |
 | `minTemp`, `maxTemp` | `17`, `30` | °C, within 17-30 |
-| `toggles` | `[]` | any of `swing` (Oscilar), `display` (Pantalla), `sleep` (Modo noche), `turbo` (Turbo) |
-| `extraModes` | `false` | adds Solo ventilador (fan only) and Deshumidificar (dry) |
+| `toggles` | `[]` | any of `swing`, `display`, `sleep`, `turbo`: momentary switches named Swing, Display, Sleep, Turbo |
+| `extraModes` | `false` | adds the Fan Only and Dry momentary switches |
+| `names` | `{}` | optional names for those switches in any language, keyed `swing`, `display`, `sleep`, `turbo`, `fanOnly`, `dry`; missing or empty keys keep the English default |
 
 The AC is a **separate accessory** (keyed by `<device id>-ac`) so it can live
 in its own room and scenes; the sensors accessory doesn't change. It exposes a

@@ -70,7 +70,7 @@
               "type": "object",
               "description": "Adds a separate HeaterCooler accessory whose IR codes are generated locally, no learning. The AC is only created when it has a name.",
               "properties": {
-                "name": {"title": "Name", "type": "string", "placeholder": "Aire Sala"},
+                "name": {"title": "Name", "type": "string", "placeholder": "Living Room AC"},
                 "protocol": {
                   "title": "IR protocol",
                   "type": "string",
@@ -86,13 +86,26 @@
                   "type": "array",
                   "uniqueItems": true,
                   "items": {"type": "string", "enum": ["swing", "display", "sleep", "turbo"]},
-                  "description": "Each one is a momentary switch: swing (Oscilar), display (Pantalla), sleep (Modo noche), turbo (Turbo)."
+                  "description": "Each one is a momentary switch that sends that button of the remote: swing, display, sleep, turbo."
                 },
                 "extraModes": {
                   "title": "Fan-only and dry switches",
                   "type": "boolean",
                   "default": false,
-                  "description": "Adds the momentary switches Solo ventilador and Deshumidificar."
+                  "description": "Adds the momentary switches Fan Only and Dry."
+                },
+                "names": {
+                  "title": "Switch names",
+                  "type": "object",
+                  "description": "Optional names for the extra switches, in any language. Empty fields keep the English default.",
+                  "properties": {
+                    "swing": {"title": "Swing", "type": "string", "placeholder": "Swing"},
+                    "display": {"title": "Display", "type": "string", "placeholder": "Display"},
+                    "sleep": {"title": "Sleep", "type": "string", "placeholder": "Sleep"},
+                    "turbo": {"title": "Turbo", "type": "string", "placeholder": "Turbo"},
+                    "fanOnly": {"title": "Fan only", "type": "string", "placeholder": "Fan Only"},
+                    "dry": {"title": "Dry", "type": "string", "placeholder": "Dry"}
+                  }
                 }
               }
             }

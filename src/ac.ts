@@ -14,7 +14,11 @@ export interface AcOptions {
   maxTemp: number;
   extraModes: boolean;
   toggles: AcToggle[];
+  names: AcSwitchNames;
 }
+
+export type AcSwitch = AcToggle | 'fanOnly' | 'dry';
+export type AcSwitchNames = Record<AcSwitch, string>;
 
 export interface AcContext {
   active: boolean;
@@ -27,16 +31,18 @@ export interface AcContext {
 const SPEEDS: Record<AcFan, number> = {low: 25, med: 50, high: 75, auto: 100};
 const FAN_BY_STEP: AcFan[] = ['auto', 'low', 'med', 'high', 'auto'];
 
-const EXTRA_MODES: {subtype: string; name: string; mode: AcMode}[] = [
-  {subtype: 'fan-only', name: 'Solo ventilador', mode: 'fan'},
-  {subtype: 'dry', name: 'Deshumidificar', mode: 'dry'},
+const EXTRA_MODES: {subtype: string; key: AcSwitch; mode: AcMode}[] = [
+  {subtype: 'fan-only', key: 'fanOnly', mode: 'fan'},
+  {subtype: 'dry', key: 'dry', mode: 'dry'},
 ];
 
-export const TOGGLE_NAMES: Record<AcToggle, string> = {
-  swing: 'Oscilar',
-  display: 'Pantalla',
-  sleep: 'Modo noche',
+export const DEFAULT_SWITCH_NAMES: AcSwitchNames = {
+  swing: 'Swing',
+  display: 'Display',
+  sleep: 'Sleep',
   turbo: 'Turbo',
+  fanOnly: 'Fan Only',
+  dry: 'Dry',
 };
 
 interface Pending {
@@ -163,8 +169,9 @@ export class TuyaIRAcAccessory {
         }
         continue;
       }
-      const service = existing ?? this.accessory.addService(Service.Switch, extra.name, extra.subtype);
-      service.setCharacteristic(Characteristic.Name, extra.name);
+      const name = this.options.names[extra.key];
+      const service = existing ?? this.accessory.addService(Service.Switch, name, extra.subtype);
+      service.setCharacteristic(Characteristic.Name, name);
       const on = service.getCharacteristic(Characteristic.On);
       on.updateValue(false);
       on.onGet(() => false)
@@ -192,7 +199,7 @@ export class TuyaIRAcAccessory {
         }
         continue;
       }
-      const name = TOGGLE_NAMES[toggle];
+      const name = this.options.names[toggle];
       const service = existing ?? this.accessory.addService(Service.Switch, name, subtype);
       service.setCharacteristic(Characteristic.Name, name);
       const on = service.getCharacteristic(Characteristic.On);

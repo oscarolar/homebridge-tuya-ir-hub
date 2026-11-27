@@ -175,12 +175,22 @@ test('a restored state outside the configured range or modes is sanitized', asyn
   hub.close();
 });
 
+test('switch names can be customized and empty names keep the default', async () => {
+  const names = {swing: 'Oscilar', display: '', sleep: ' Modo noche ', fanOnly: 'Solo ventilador', dry: 'Deshumidificar'};
+  const {hub, api} = await started({name: 'Aire', toggles: ['swing', 'display', 'sleep', 'turbo'], extraModes: true, names});
+  const switches = acAccessory(api).services.filter(s => s.UUID === Service.Switch.UUID);
+  assert.deepStrictEqual(switches.map(s => s.getCharacteristic(Characteristic.Name).value),
+    ['Solo ventilador', 'Deshumidificar', 'Oscilar', 'Display', 'Modo noche', 'Turbo']);
+  api.emit('shutdown');
+  hub.close();
+});
+
 test('toggles and extra modes are momentary switches on the AC accessory', async () => {
   const {hub, api} = await started({name: 'Aire', toggles: ['swing', 'display', 'sleep', 'turbo', 'swing'], extraModes: true});
   const accessory = acAccessory(api);
   const switches = accessory.services.filter(s => s.UUID === Service.Switch.UUID);
   assert.deepStrictEqual(switches.map(s => s.getCharacteristic(Characteristic.Name).value),
-    ['Solo ventilador', 'Deshumidificar', 'Oscilar', 'Pantalla', 'Modo noche', 'Turbo']);
+    ['Fan Only', 'Dry', 'Swing', 'Display', 'Sleep', 'Turbo']);
   for (const toggle of ['swing', 'display', 'sleep', 'turbo']) {
     await accessory.getServiceById(Service.Switch, `toggle-${toggle}`).getCharacteristic(Characteristic.On).handleSetRequest(true);
   }

@@ -1,5 +1,5 @@
 import type {API, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig} from 'homebridge';
-import {AcOptions, TuyaIRAcAccessory} from './ac';
+import {AcOptions, AcSwitch, AcSwitchNames, DEFAULT_SWITCH_NAMES, TuyaIRAcAccessory} from './ac';
 import {TuyaIRHubAccessory} from './accessory';
 import {AC_TOGGLES, AcToggle, TEMP_MAX, TEMP_MIN} from './coolix';
 import {ButtonConfig, HubConfig, TuyaHub} from './device';
@@ -113,6 +113,14 @@ export class TuyaIRHubPlatform implements DynamicPlatformPlugin {
         toggles.push(toggle as AcToggle);
       }
     }
+    const names = {...DEFAULT_SWITCH_NAMES} as AcSwitchNames;
+    const custom = ac.names && typeof ac.names === 'object' ? ac.names as Record<string, unknown> : {};
+    for (const key of Object.keys(names) as AcSwitch[]) {
+      const name = String(custom[key] ?? '').trim();
+      if (name) {
+        names[key] = serviceName(name);
+      }
+    }
     return {
       name: serviceName(String(ac.name)),
       heat: ac.heat === true,
@@ -120,6 +128,7 @@ export class TuyaIRHubPlatform implements DynamicPlatformPlugin {
       maxTemp,
       extraModes: ac.extraModes === true,
       toggles,
+      names,
     };
   }
 
